@@ -1,0 +1,3 @@
+interface:
+  display_name: "Pipeline Proof Review"
+  short_description: "Ревью через сквозные тесты безопасности и устойчивости"

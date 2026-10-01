@@ -1,0 +1,3 @@
+interface:
+  display_name: "Pipeline Contract Coder"
+  short_description: "Код по плану, проверка пайплайна и передача на ревью"

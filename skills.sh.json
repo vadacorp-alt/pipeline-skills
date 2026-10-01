@@ -1,0 +1,44 @@
+{
+  "$schema": "https://skills.sh/schemas/skills.sh.schema.json",
+  "notGrouped": "bottom",
+  "groupings": [
+    {
+      "title": "Pipeline Architecture",
+      "description": "Primary QA review and implementation workflow pairing public-boundary proof with contract execution.",
+      "skills": [
+        "pipeline-proof-review",
+        "pipeline-contract-coder"
+      ]
+    },
+    {
+      "title": "Core Optimization",
+      "description": "YAGNI ladder, code reuse, minimal diffs, and root-cause fix strategies.",
+      "skills": [
+        "ponytail"
+      ]
+    },
+    {
+      "title": "Security & APIs",
+      "description": "OWASP API Top 10, IDOR/BOLA authorization gates, and security audit checklists.",
+      "skills": [
+        "api-security-review",
+        "security-review"
+      ]
+    },
+    {
+      "title": "Database & Persistence",
+      "description": "PostgreSQL, Supabase RLS, transaction isolation, and lock management.",
+      "skills": [
+        "supabase-postgres-best-practices"
+      ]
+    },
+    {
+      "title": "Backend Engineering",
+      "description": "Modern PHP 8.4 patterns, strict typing, and test quality.",
+      "skills": [
+        "php-pro",
+        "php-best-practices"
+      ]
+    }
+  ]
+}

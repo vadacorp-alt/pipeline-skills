@@ -40,16 +40,17 @@ plan is the source of requirements, not something to silently simplify after cod
 Full approved context must be accessible to the reviewer, but large transcripts and
 unexecuted plan stages do not need to be copied into every assignment.
 
-## Establish the baseline yourself
+## Establish the baseline yourself (Minimal Git Calls)
 
-- Inspect the actual target using `git rev-parse --show-toplevel`, branch/HEAD, and
-  status. For a clean task start, `git rev-parse HEAD` supplies `BASE_SHA`; record the
-  resolved commit rather than only a moving branch name. Do not infer the worktree
-  from the UI title or accidentally edit the main checkout.
+- If `WORKTREE`, `BASE_SHA`, and initial dirty state are already established in the active
+  conversation context or supplied in the handoff packet, **reuse them directly** without
+  running redundant `git rev-parse` / `git status` commands.
+- When establishing the baseline for the first time, combine discovery into a single
+  read-only call (e.g. `git rev-parse --show-toplevel HEAD && git status --short`) rather
+  than issuing 3–4 separate tool calls. Record the resolved commit rather than only a
+  moving branch name.
 - Existing staged/unstaged changes and relevant untracked source are part of starting
-  state. Preserve a scoped patch/snapshot and their source identities so the review
-  can distinguish your work. A filename list or HEAD alone cannot reconstruct dirty
-  input. Do not reset, stash, commit, or discard someone else's work as bookkeeping.
+  state. Do not reset, stash, commit, or discard someone else's work as bookkeeping.
   Do not copy credentials, environment secrets, generated output, or unrelated files.
 - A later `RESULT_SHA` can equal `BASE_SHA` when nothing was committed; final diff and
   relevant dirty-source hashes identify the result. Include new source/tests. Exclude

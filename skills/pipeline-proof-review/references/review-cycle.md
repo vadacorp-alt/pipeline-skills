@@ -89,12 +89,12 @@ Do not demand a separate mutation per assertion, recursive validation of validat
 exhaustive fault injection, or killing equivalent/guarded mutants. Stop once the
 specific execution or false-result problem is resolved and the required proof works.
 
-Reuse observed evidence only when the relevant code, tests, configuration, schema,
+Reuse observed evidence when the relevant code, tests, configuration, schema,
 and environment assumptions still match; account for dirty files, not just commit SHA.
-Rerun affected checks after relevant changes. Run focused regression and preserved-flow
-checks during fixes, with existing full required gates at their agreed completion stage.
-Do not rerun whole suites just because the reviewer changed. Do not reread unchanged
-skills or resend full histories in the same context; hand off compact decisions and paths.
+- **Static checks (`tsc --noEmit`, `php -l`)**: Trust the coder's static check status when the source state matches; never re-run TypeScript or PHP syntax checks in the reviewer.
+- **Integration proof reuse**: If the coder already executed the integration test on the exact current source state and produced an `Evidence Receipt` in the active context, first audit the test code statically. If the test already enforces all required invariants, positive controls, and negative boundaries, accept the receipt without re-running the test command. If additional test cases are needed, add them to the test file first and run the test suite **once**.
+- **Git metadata**: If `WORKTREE`, `BASE_SHA`, and `RESULT_SHA` are already established in the active session or handoff and no external commits occurred, do not run redundant sequences of `git rev-parse` / `git status` commands.
+Do not reread unchanged skills or resend full histories in the same context; hand off compact decisions and paths.
 
 Finish when confirmed in-scope blockers are closed, preserved contracts and required
 checks pass for the reviewed source, and no required coverage is unresolved. Report

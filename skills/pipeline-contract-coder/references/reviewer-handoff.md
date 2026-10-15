@@ -36,31 +36,24 @@ instead of copying full plans, logs or skills. Never prompt the reviewer to re-r
 plans or companion skills already loaded in the active conversation context. State proposed fixes
 under existing IDs; the reviewer determines their closure independently.
 
-## Keep coder results out of the reviewer prompt
+## Pass static check status & Evidence Receipt pointers to avoid redundant runs
 
-The coder's report may retain exact commands and results for the user, diagnosis, and
-historical source/environment identity. Do not duplicate routine successful outcomes
-in **«Готовый запрос ревьюеру»**. In particular, omit PASS labels, passed-test counts,
-environment versions, timings, and copied output: they consume context and are claims
-the independent reviewer must verify rather than trust.
+The coder is responsible for running static syntax/type checks (`tsc --noEmit`, `php -l`)
+on touched files once before handoff. Record a compact `Статические проверки: PASS (tsc --noEmit, php -l)`
+line in **«Готовый запрос ревьюеру»** so the reviewer knows static compilation is already
+clean and does NOT re-run TypeScript or PHP syntax checks.
 
-Include a compact **reproduction pointers** line only when it materially saves
-rediscovery: contract-mandated gates, a non-obvious regression/reproducer command, or
-the path to a dedicated test/evidence artifact. Prefer paths or grouped literal
-commands over a narrated result list. These are candidates for independent execution,
-not proof and not an exhaustive review checklist. Explicitly leave check selection and
-additional causal coverage to the reviewer.
+Do not paste verbose test logs, passed-test counts, environment versions, or timings into
+**«Готовый запрос ревьюеру»**. Instead, include a compact **reproduction & receipt pointers**
+line with the test command and the path to the archived `Evidence Receipt` / log file.
+If the reviewer runs in the same session or verifies that the source state matches and
+the test code already covers all required positive/negative invariants, the reviewer can
+verify the test code statically and reuse the receipt without re-executing the runner.
+If the reviewer adds new negative cases, they will edit the test first and run it once.
 
 Always surface material negative verification state: FAIL, BLOCKED_ENV, skipped or
 flaky required coverage, unavailable prerequisites, stale evidence, and checks that
 were not run. State the limitation and where its evidence lives without pasting logs.
-If all coder checks succeeded and no reproduction pointer is non-obvious, omit the
-checks field entirely; the linked coder report remains the record of coder-side runs.
-
-Require the reviewer to compare the packet with actual Git/files/environment and
-verify claims independently. Reuse trustworthy evidence only while its relevant
-assumptions still hold; the coder's PASS does not settle the review. Source, test or
-environment drift requires the affected delta/checks, not an automatic full restart.
 
 ## Shape of the generated task
 
@@ -78,16 +71,16 @@ RESULT_SHA и итоговое dirty-состояние: <текущий SHA и 
 
 Основа: <абсолютные пути к версии плана, выполненные этапы, отчёт кодера> (Используй view_file ТОЛЬКО если это чистый запуск новой сессии без контекста. В текущей сессии повторное чтение плана строго запрещено).
 Контракт и сохранение: <наблюдаемый результат, инварианты, исключения>.
+Статические проверки (уже выполнены кодером, повторно НЕ запускать): <tsc --noEmit / php -l статус>.
 <Для первичного прохода: проверить весь согласованный результат и причинные пути>.
 <Для повторного: прежние открытые ID и регрессии от фикса; закрытые/отклонённые
 не переоткрывать без новых фактов; учитывать затронутые неизменённые участки>.
 
-Ориентиры воспроизведения из <cwd>: <только неочевидные или обязательные команды/пути;
-без результатов кодера; не ограничивают выбор проверок ревьюером>. <Поле можно убрать>.
+Ориентиры воспроизведения и Evidence Receipt из <cwd>: <команда теста и путь к логу/receipt;
+если код теста уже покрывает все позитивные/негативные инварианты, не перезапускай тест вхолостую —
+сначала допиши недостающие кейсы (если они нужны) и запусти тест ровно 1 раз>.
 Остаётся непроверенным: <конкретные пробелы и необходимые свидетельства либо none>.
-Сверь переданные данные с Git и файлами; самостоятельно выбери и выполни достаточные
-проверки соответствия контракту, не полагаясь на результаты кодера и не ограничиваясь
-его ориентирами. Выдай вердикт и решения по прежним ID, если они есть.
+Сверь код и тест с контрактом. Выдай вердикт и решения по прежним ID, если они есть.
 Полномочия: <действующие границы проверок и изменений; никаких новых разрешений>.
 ```
 

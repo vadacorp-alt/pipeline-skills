@@ -25,9 +25,8 @@ similar skill. If an applicable dependency is still missing, continue unaffected
 discovery and mark dependent proof `UNVERIFIED` with the missing entrypoint.
 Do not install or rewrite other skills implicitly.
 
-Record each loaded path and its corresponding invariant/test decision in the
-opening test comment or existing review artifact. A concise note suffices; do not
-read skills simply to satisfy a checklist ritual. Reuse unchanged loaded content on later rounds.
+Do not edit test files just to record loaded skill paths in opening comments, and do
+not read skills simply to satisfy a checklist ritual. Reuse unchanged loaded content on later rounds.
 
 Read relevant references selectively:
 
@@ -43,8 +42,9 @@ Read relevant references selectively:
 The user's proof request takes precedence over companion output templates. Do not
 emit their finding lists, scaffold DTO/service/controller layers, rewrite production
 code, add frameworks, auto-update dependencies, or impose global 80% coverage merely
-because a companion describes a full implementation. Use required project gates;
-run PHPStan level 9 where supported or explicitly requested. Missing optional
+because a companion describes a full implementation. Do not run static analyzers or type
+checkers (`tsc --noEmit`, `php -l`, `phpstan`) during review unless you modified a test
+file that requires a syntax check. Missing optional
 tooling is a validation limit, not a product defect or reason to skip E2E execution.
 
 Examples are aids, not authoritative contracts:

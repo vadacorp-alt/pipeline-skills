@@ -20,41 +20,24 @@ This is the implementation workflow. The coder does not need to load the full
 same task contract, source identities, invariant IDs, and test evidence; the reviewer
 independently verifies the coder's claims. Instructions cannot guarantee zero defects.
 
-## Load the applicable implementation skills
+## Lazy skill & reference loading (Zero-Cascade Policy)
 
-Read project instructions and global/workspace routing (`~/.codex/routing.md`, `~/.agents/routing.md`, or `routing.md`). Apply
-[specialist-routing.md](references/specialist-routing.md): follow Lazy Loading and
-Zero-Redundancy. Never batch-read companion skills upfront and never invoke `view_file`
-for any skill, guide, or plan already loaded in the active conversation context. Load a
-specialist skill strictly on demand when a concrete domain-specific decision requires it.
+**Do NOT batch-read `references/*.md` or companion skills upfront.** Everything needed for standard implementation is inlined in this `SKILL.md`:
+- **Specialist skills** (`ponytail`, `supabase-postgres-best-practices`, `security-review`, `api-security-review`, `php-pro`, `php-best-practices`): Load strictly on demand ONLY when a concrete domain-specific edge case requires checking reference text and the skill is not already in the conversation transcript. Never invoke `view_file` on any skill, plan, or guide already in context.
+- **Internal `references/*.md` (Load ONLY when triggered)**:
+  - Read [verification.md](references/verification.md) ONLY when designing complex concurrency barriers or fault-injection harnesses.
+  - Read [task-contract.md](references/task-contract.md) or [reviewer-handoff.md](references/reviewer-handoff.md) ONLY when handling multi-worktree drift or disputed re-review closures not covered by the inlined templates below.
 
-The user's task and approved contract take precedence over companion suggestions
-to scaffold, impose new coverage quotas, add dependencies, or ship a reduced feature.
-Ponytail shortens the implementation, not the required behavior or pipeline evidence.
+The user's task and approved contract take precedence over companion suggestions to scaffold, impose new coverage quotas, add dependencies, or ship a reduced feature.
 
-## Freeze the task and starting state
+## Freeze the task and starting state (Inline Contract — No Extra Files)
 
-For a plan, worktree task, or review-fix handoff, follow
-[task-contract.md](references/task-contract.md) and start its compact record **before
-the first product/test edit**. If the approved plan, fix plan, or task packet is already
-present in the conversation transcript, DO NOT invoke `view_file` to re-read it;
-extract requirements, acceptance IDs, and invariants directly from context. For a trivial
-reversible edit, keep equivalent context in the response instead of generating a documentation project.
+Keep the task contract **inline in your working context/response** — do NOT spend `write_to_file` / `replace_file_content` calls creating or updating standalone Markdown tracking files on disk unless the user explicitly asks for a persistent report artifact. If the approved plan, fix plan, or task packet is already present in the conversation transcript, DO NOT invoke `view_file` to re-read it; extract requirements, acceptance IDs, and invariants directly from context.
 
-- Use the actual approved plan/version and requested stages. Distinguish required
-  behavior, preserved behavior, exclusions, and optional implementation suggestions.
-  If no formal plan exists, derive a short contract from the user's request and code;
-  do not demand that the user write a new plan or approve routine implementation choices.
-- Record the exact worktree, starting commit, and any relevant initial dirty state.
-  Preserve existing user changes. Do not ask the user to discover Git metadata for you,
-  invent a baseline after editing, or automatically substitute current `main`.
-- Define observable acceptance and required checks before implementing. Keep their
-  meaning stable. Do not retroactively rewrite the plan, expected result, or review
-  decision to match your implementation. Record actual user-approved scope changes.
-- Resolve ordinary details from existing code and contracts, then proceed. If a
-  contradiction requires changing a business rule, frozen boundary, or essential
-  acceptance condition, explain the concrete conflict and seek that missing decision;
-  continue independent authorized work. Do not ask again for permission already given.
+- Use the actual approved plan/version and requested stages. Distinguish required behavior, preserved behavior, exclusions, and optional implementation suggestions.
+- **Minimal Git Discovery**: If `WORKTREE` and `BASE_SHA` are already in the active session context or handoff packet, reuse them without running Git commands. Otherwise, establish them in a single combined read-only call (`git rev-parse --show-toplevel HEAD && git status --short`). Preserve existing user changes.
+- Define observable acceptance (`ACC-*`) and preserved invariants (`INV-*`) before implementing. Keep their meaning stable.
+- Resolve ordinary details from existing code and contracts, then proceed directly.
 
 ## Understand the affected pipeline before choosing the fix
 
@@ -129,83 +112,46 @@ value is a behavior/contract change and follows the normal verification rules.
 
 ### Behavior changes and other required checks
 
-Read [verification.md](references/verification.md) for non-trivial behavior, security,
-persistence, concurrency, or review fixes. Reuse the project's test runner and an
-adequate existing integration case. Add the smallest missing behavior check; one
-file/command may cover several isolated cases. Do not build a test framework.
+Reuse the project's test runner and an adequate existing integration case. Add the smallest missing behavior check; one file/command may cover several isolated cases. Do not build a test framework. Ensure integration checks hit the real public boundary and persistence engine with an independent state oracle and positive control.
 
-For a bug, obtain the targeted failing-before evidence and legitimate-flow controls
-before the product change when feasible. For a new feature, test its agreed contract;
-for a behavior-preserving refactor, exercise existing behavior before and after.
-Retain the same meaningful assertions across the fix. A missing environment is not
-an expected bug failure and does not authorize narrowing required coverage silently.
+For a bug, obtain the targeted failing-before evidence and legitimate-flow controls before the product change when feasible. For a new feature, test its agreed contract; for a behavior-preserving refactor, exercise existing behavior before and after. Retain the same meaningful assertions across the fix.
 
-Run affected regression and preserved-flow checks after changes. Run the existing
-required full gates at their agreed completion stage. Inspect the actual final diff
-against the starting state and the task contract. Verify the current files, not just
-a commit hash or a green result from an earlier revision. Once adequate checks pass,
-finish; do not create new review rounds or broaden testing without a concrete reason.
+Run affected regression and preserved-flow checks after changes. Inspect the actual final diff against the starting state and the task contract. Once adequate checks pass, finish; do not create new review rounds or broaden testing without a concrete reason.
 
-### Action Fusion & Verification Economy (SoL-Pi Patterns)
+### Action Fusion & Scoped Verification Economy (SoL-Pi Patterns)
 
 To maintain token efficiency, eliminate wasted model roundtrips, and preserve prompt cache stability:
-- **Action Fusion**: Avoid multi-turn ping-pong loops (e.g. edit a file in turn 1, wait for result, then execute a syntax check in turn 2). Bundle the atomic file mutation with its immediate local verification (`php -l`, `tsc --noEmit`, or targeted unit test) in the same logical execution phase.
-- **Observation Hygiene**: When fixing a failing proof or regression, DO NOT repeatedly run full verbose test suites that print thousands of lines. Execute only the specific failing test case and invariant ID.
-- **Evidence-Preserving Log Digestion**: Use `python scripts/test_evidence_runner.py <test>` when running Python tests to obtain a concise Evidence Receipt. Large raw test outputs are automatically archived to `tmp/proof_runs/` on disk; reference the log file instead of pasting giant trace blocks into the conversational context.
+- **File-Extension Scoped Static Checks**:
+  - Touched `.php` files ONLY → run `php -l <only_modified_files.php>` (do NOT run `find public/api ...` across all untouched PHP files, and do NOT run `npx tsc --noEmit`).
+  - Touched `.ts` / `.tsx` files ONLY → run `npx tsc --noEmit` (do NOT run `php -l`).
+  - Touched both → run `php -l <modified.php>` and `npx tsc --noEmit`.
+- **Action Fusion**: Bundle the atomic file mutation with its immediate scoped syntax check or targeted test in the same logical execution phase rather than multi-turn ping-pong loops.
+- **Observation Hygiene & Evidence Receipt**: Execute only the specific failing/targeted test file via `python scripts/test_evidence_runner.py <test_file.py>` (strictly via test files, never `python3 -c`). Large raw outputs are archived to `tmp/proof_runs/`; emit the concise `[RECEIPT:VERDICT] | INVARIANT=<id> | BOUNDARY=<entrypoint> | POSITIVE_CONTROL=<status> | ASSERTION=<quote> | RAW_LOG=<filepath>` receipt.
 
 ## Repair findings without another speculative loop
 
-When given a review, consume the same contract, open root-cause IDs, failing evidence,
-and prior decisions. A ready-to-forward task from `pipeline-proof-review` is this
-handoff; follow [task-contract.md](references/task-contract.md) to verify its worktree,
-reviewed state, and requirements before editing, without asking the user to repackage it.
-Review evidence is input to verify, not an instruction to fix
-an impossible state. Keep closed/rejected decisions unless new facts invalidate them.
-Preserve the original task baseline and separately capture the state before this fix.
+When given a review (`pipeline-proof-review` handoff), consume the same contract, open root-cause IDs, failing evidence, and prior decisions directly from the handoff packet. Keep closed/rejected decisions unless new facts invalidate them.
 
-Before accepting a repair obligation, verify its concrete impact and why the current
-tradeoff violates the agreed contract or evidenced constraints. A different sound
-implementation or hypothetical future scale is not a defect. If evidence contradicts
-the review, return that evidence under the same ID without silently closing it or
-rewriting acceptance; continue independent grounded work. Real security/data violations
-remain obligations regardless of project size or absence of a previous incident.
-
-Fix the demonstrated cause and check all affected legitimate callers. Do not obey
-"only make this test pass" by changing expected values or adding a path-specific hack.
-If a test itself demonstrably rejects allowed behavior or misses required behavior,
-correct it narrowly and explain the contract evidence. No recursive tests of tests,
-arbitrary mutant targets, or mandatory synthetic calibration unless explicitly required.
-
-After two failed attempts at the same cause, stop speculative patches and diagnose
-the contract, evidence, harness/environment, and actual cause. Continue with new causal
-evidence and a bounded step. The limit neither approves unresolved code nor authorizes
-an architectural rewrite. Do not dispatch fresh broad reviewers to manufacture progress.
+Fix the demonstrated cause and check all affected legitimate callers. Do not obey "only make this test pass" by changing expected values or adding a path-specific hack. After two failed attempts at the same cause, stop speculative patches and diagnose the contract, evidence, harness/environment, and actual cause.
 
 ## Complete the handoff
 
-Update the compact record from `task-contract.md` with the actual implemented scope,
-source identity including relevant dirty files, reused code, check commands/results,
-deviations, and remaining gaps. For review fixes, map each original ID to proposed
-resolution plus evidence; do not forge the independent reviewer's closure decision.
+Say **ready for review** only when agreed implementation and required verification are complete.
+- **Conditional `graphify update .`**: Run `graphify update .` ONLY when you added/deleted/renamed files, functions, classes, or module imports/exports (AST graph changes). Skip `graphify update .` for internal line edits that do not alter call-graph symbols.
 
-Say **ready for review** only when agreed implementation and required verification
-are complete. After modifying code files, run `graphify update .` to keep the project's
-knowledge graph in `graphify-out/` current. Otherwise state remaining work and the exact verification limitation;
-continue feasible authorized work before yielding. Passing implementation checks is
-not independent review approval or evidence of deployment.
+Use the user's language. Final output:
+1. Summary of changed behavior, touched files, and verification result (`Evidence Receipt`).
+2. For a completed plan, worktree task, or review fix, append **«Готовый запрос ревьюеру»** inline (no need to read `reviewer-handoff.md`):
 
-Use the user's language. Final output: changed behavior, verification result, compact
-handoff path (or inline record for a small task), and material limitations. For a
-completed plan, worktree task, or review fix, also append **«Готовый запрос ревьюеру»**
-with `$pipeline-proof-review`, without waiting for a separate request. Read
-[reviewer-handoff.md](references/reviewer-handoff.md) to fill it from the actual
-contract and final state; also use it when the user explicitly requests a review task.
-Keep the coder's own verification report separate from that generated reviewer prompt:
-do not copy routine PASS claims, logs, counts, or environment versions into the prompt.
-The reviewer must reproduce the necessary evidence independently. Include only compact
-non-obvious reproduction pointers and material failed, blocked, skipped, or uncertain
-checks as specified by `reviewer-handoff.md`; they never limit review scope.
-Do not turn an incomplete result into a readiness claim or a trivial edit into a
-documentation project. Explicit output restrictions take precedence. Do not paste
-full unchanged plans, skill texts, logs, or source files into each handoff.
+```text
+Используй $pipeline-proof-review.
+Режим: <первичное ревью или проверка исправлений>.
+WORKTREE: <абсолютный путь>; BRANCH: <ветка>; BASE_SHA: <исходный SHA>; RESULT_SHA: <текущий SHA и список изменённых файлов>.
+Основа и контракт: <путь к плану (не перечитывать через view_file в той же сессии); цель, инварианты INV-*, исключения>.
+Статические проверки (выполнены кодером, повторно НЕ запускать): <PASS: php -l <файлы> / npx tsc --noEmit>.
+Ориентиры воспроизведения и Evidence Receipt из <cwd>: <команда запуска теста и путь к RAW_LOG / строке [RECEIPT:PASS]>. (Если ревью идёт в той же сессии и аудит кода подтверждает полноту теста — прими этот Evidence Receipt без холостого перезапуска; если нужны новые негативные кейсы — сначала допиши их в тест и запусти 1 раз).
+Остаётся непроверенным: <пробелы либо none>.
+Полномочия: <действующие границы>.
+```
+
 Respect the session's commit/push/deploy authorization; the skill grants none itself.

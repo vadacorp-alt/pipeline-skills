@@ -5,9 +5,10 @@ here are candidate invariants, not a schema or new requirements for every app.
 
 ## Ground the environment and fixtures
 
-- Record revision plus relevant dirty-source hashes, runner/runtime/DB versions,
-  applied schema/migration identity, isolation level, roles, worker/pool mode where
-  relevant. Verify requests reach that implementation and database.
+- Record revision plus relevant dirty-source identity only when not already established
+  in the active session context. Do NOT run diagnostic commands to collect runner,
+  runtime, OS, or DB versions, migration ledgers, or pool modes unless a specific
+  invariant directly depends on version-specific or isolation-level behavior.
 - Before writing, verify the database and mutating dependencies are isolated test
   resources. A `staging` or `localhost` hostname is insufficient: local PHP or a
   staging site may still use a production DB. Use effective configuration and a
